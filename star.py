@@ -179,7 +179,8 @@ def send_message_to_feishu(new_stargazers):
     headers = {
         "Content-Type": "application/json"
     }
-    latest_run_id, latest_artifact_id = get_latest_artifact_info()
+    latest_run_id = get_latest_run_id()
+    latest_artifact_id = get_artifact_id(latest_run_id)
     if latest_run_id and latest_artifact_id:
         artifact_url = f"https://github.com/{repo}/actions/runs/{latest_run_id}/artifacts/{latest_artifact_id}"
     else:
