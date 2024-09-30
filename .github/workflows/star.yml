@@ -62,7 +62,8 @@ jobs:
         if [ ! -f stargazers.json ]; then
           echo "stargazers.json not found, creating an empty file."
           echo "[]" > stargazers.json
-          
+        fi  # 确保条件语句正确关闭
+
     - name: List files for debugging
       if: always()
       run: ls -l  # 列出当前目录的文件，帮助调试
