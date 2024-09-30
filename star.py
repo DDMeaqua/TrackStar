@@ -127,7 +127,7 @@ def update_total_csv(new_stargazers_details, csv_filename):
 
 # 函数：获取最新的运行ID
 def get_latest_run_id():
-    url = f'https://api.github.com/repos/{repo}/actions/runs'
+    url = f'https://api.github.com/repos/{repo}/actions/runs?status=success&per_page=1'
     response = send_request(url)
     if response:
         runs = response.json().get('workflow_runs', [])
