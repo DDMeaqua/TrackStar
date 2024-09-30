@@ -125,25 +125,57 @@ def update_total_csv(new_stargazers_details, csv_filename):
             filtered_user = {key: user[key] for key in FIELDNAMES if key in user}
             writer.writerow(filtered_user)
 
-# 函数：获取最新的运行ID和artifact ID
-def get_latest_artifact_info():
+# 函数：获取最新的运行ID
+def get_latest_run_id():
     url = f'https://api.github.com/repos/{repo}/actions/runs'
     response = send_request(url)
     if response:
         runs = response.json().get('workflow_runs', [])
         if runs:
             latest_run_id = runs[0]['id']
-            artifacts_url = runs[0]['artifacts_url']
-            artifacts_response = send_request(artifacts_url)
-            if artifacts_response:
-                artifacts = artifacts_response.json().get('artifacts', [])
-                if artifacts:
-                    latest_artifact_id = artifacts[0]['id']
-                    return latest_run_id, latest_artifact_id
-    return None, None
+            return latest_run_id
+    return None
+
+# 函数：获取指定运行ID的artifact ID
+def get_artifact_id(run_id):
+    url = f'https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts'
+    response = send_request(url)
+    if response:
+        artifacts = response.json().get('artifacts', [])
+        if artifacts:
+            latest_artifact_id = artifacts[0]['id']
+            return latest_artifact_id
+    return None
 
 # 函数：发送消息到Feishu
 def send_message_to_feishu(new_stargazers):
+    headers = {
+        "Content-Type": "application/json"
+    }
+    latest_run_id = get_latest_run_id()
+    if latest_run_id:
+        latest_artifact_id = get_artifact_id(latest_run_id)
+        if latest_artifact_id:
+            artifact_url = f"https://github.com/{repo}/actions/runs/{latest_run_id}/artifacts/{latest_artifact_id}"
+        else:
+            logging.error("无法获取最新的artifact ID")
+            artifact_url = "无法获取最新的artifact ID"
+    else:
+        logging.error("无法获取最新的运行ID")
+        artifact_url = "无法获取最新的运行ID"
+
+    data = {
+        "msg_type": "text",
+        "content": {
+            "text": f"今天有{len(new_stargazers)}个人点赞了仓库,\n" + "\n".join([f"https://github.com/{user['login']} (关注{user['followers']}人, 被关注{user['following']}人, 公开了{user['public_repos']}个仓库)" for user in new_stargazers]) + f"\n\n点击 {artifact_url} 查看当日star用户信息"
+        }
+    }
+    try:
+        response = requests.post(feishu_webhook_url, headers=headers, json=data, timeout=timeout_seconds)
+        response.raise_for_status()
+        logging.info("消息已发送到Feishu")
+    except requests.RequestException as e:
+        logging.error(f"发送消息到Feishu时发生错误: {e}")
     headers = {
         "Content-Type": "application/json"
     }
@@ -152,7 +184,7 @@ def send_message_to_feishu(new_stargazers):
         artifact_url = f"https://github.com/{repo}/actions/runs/{latest_run_id}/artifacts/{latest_artifact_id}"
     else:
         logging.error("无法获取最新的artifact信息")
-        return
+        artifact_url = "无法获取最新的artifact信息"
     data = {
         "msg_type": "text",
         "content": {
