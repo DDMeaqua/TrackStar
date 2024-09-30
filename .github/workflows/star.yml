@@ -58,12 +58,11 @@ jobs:
         curl -L -H "Authorization: token $MY_GITHUB_TOKEN" \
           -o artifact.zip \
           "$ARTIFACT_URL"
-        unzip artifact.zip -d .
+        unzip -o artifact.zip -d .
         if [ ! -f stargazers.json ]; then
           echo "stargazers.json not found, creating an empty file."
           echo "[]" > stargazers.json
-        fi
-
+          
     - name: List files for debugging
       if: always()
       run: ls -l  # 列出当前目录的文件，帮助调试
